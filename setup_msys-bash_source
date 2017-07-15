@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# This script sets up a working directory for building and patching
+# bash for MSYS in the current directory. This will be the
+# directory that will contain the msys-build-bash script and
+# the source tarball and upstream patches.
+#
+# The script will download the source tarball and all upstream
+# patches for the version specified, create "old" and "new"
+# sub-directories if they don't already exist, extract the source
+# tarball inside the "old" sub-directory, apply all upstream patches
+# then copy the patched source directory to the "new" sub-directory.
+
+if [ ! $# = 1 ]; then
+	echo "Usage: setup_msys-bash_source <major.minor> where"
+	echo "       major and minor is the bash version"
+	echo
+	echo "Example: setup_msys-bash_source 4.4"
+	echo "         This will setup the directory for working"
+	echo "         on bash-4.4"
+	exit 1
+fi
+
+version=${1}
+major=${version%.*}
+minor=${version#*.}
+base_name="bash-${major}.${minor}"
+base_url="http://ftp.gnu.org/gnu/bash"
+base_dir="$(pwd)"
+
+# Download bash source
+cd "${base_dir}"
+wget -c ${base_url}/${base_name}.tar.gz
+
+# Download upstream patches
+wget -c -r -nd -np "${base_url}/${base_name}-patches/" -A "bash${major}${minor}-???"
+
+if [ ! -d "old" ]; then
+	mkdir old
+fi
+
+if [ ! -d "new" ]; then
+	mkdir new
+fi
+
+exists=false
+if [ -d "${base_dir}/old/${base_name}" ]; then
+	exists=true
+	while true; do
+		read -p "Delete existing source in ${base_dir}/old/${base_name}? (y/n) " answer
+		case $answer in
+			[yY]* ) echo "Deleting ${base_dir}/old/${base_name}"
+							rm -rf "${base_dir}/old/${base_name}"
+							exists=false
+							break;;
+			[nN]* ) break;;
+		esac
+	done
+fi
+
+if [ "${exists}" = false ]; then
+	cd "${base_dir}/old"
+	echo "Extracting archive ${base_name}.tar.gz"
+	(tar xf "../${base_name}.tar.gz" || exit 0)
+	cd "${base_name}"
+	for name in "${base_dir}"/bash"${major}${minor}"-??? ; do
+		patch -Np0 -i "${name}"
+	done
+fi
+
+exists=false
+cd ${base_dir}
+if [ -d "${base_dir}/new/${base_name}" ]; then
+	exists=true
+	while true; do
+		read -p "Replace existing source in ${base_dir}/new/${base_name}? (y/n) " answer
+		case $answer in
+			[yY]* ) echo "Deleting ${base_dir}/new/${base_name}"
+							rm -rf "${base_dir}/new/${base_name}"
+							exists=false
+							break;;
+			[nN]* ) break;;
+		esac
+	done
+fi
+
+if [ "${exists}" = false ]; then
+	echo "Copying ${base_name} from ${base_dir}/old"
+	cp -r ${base_dir}/old/${base_name} ${base_dir}/new/${base_name}
+fi

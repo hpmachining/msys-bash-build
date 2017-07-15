@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm -f bash??-???
+rm -f bash-*.tar.gz

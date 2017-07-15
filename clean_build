@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -f *.xz
+rm -rf _inst
+rm -rf _build
+rm -rf bash-?.?

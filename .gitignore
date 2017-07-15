@@ -1,0 +1,7 @@
+#Project files
+old/
+new/
+_build/
+_inst/
+bash-*.*/
+*.xz

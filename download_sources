@@ -1,0 +1,16 @@
+#!/bin/bash
+
+version="4.1"
+major=${version%.*}
+minor=${version#*.}
+base_name="bash-${major}.${minor}"
+base_url="http://ftp.gnu.org/gnu/bash"
+base_dir="$(pwd)"
+
+# Download bash source
+cd "${base_dir}"
+wget -c ${base_url}/${base_name}.tar.gz
+
+# Download upstream patches
+wget -c -r -nd -np "${base_url}/${base_name}-patches/" -A "bash${major}${minor}-???"
+
