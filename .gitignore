@@ -5,3 +5,5 @@ _build/
 _inst/
 bash-*.*/
 *.xz
+*.gz
+bash41*
