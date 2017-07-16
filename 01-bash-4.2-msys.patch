@@ -1,0 +1,90 @@
+diff -urN old/bash-4.2/configure.in new/bash-4.2/configure.in
+--- old/bash-4.2/configure.in	2011-02-07 17:03:14 -0500
++++ new/bash-4.2/configure.in	2017-07-15 00:25:51 -0400
+@@ -86,6 +86,7 @@
+ *-bsdi2.1|*-bsdi3.?)	opt_bash_malloc=no ; : ${CC:=shlicc2} ;; # for loadable builtins
+ *-beos*)	opt_bash_malloc=no ;;	# they say it's suitable
+ *-cygwin*)	opt_bash_malloc=no ;;	# Cygnus's CYGWIN environment
++*-msys*)	opt_bash_malloc=no ;;	# Cygnus's CYGWIN environment
+ *-opennt*|*-interix*)	opt_bash_malloc=no ;;	# Interix, now owned by Microsoft
+ esac
+ 
+@@ -408,6 +409,10 @@
+ CROSS_COMPILE=
+ if test "x$cross_compiling" = "xyes"; then
+     case "${host}" in
++    *-msys*)
++	cross_cache=${srcdir}/cross-build/cygwin32.cache
++	SIGNAMES_H='$(srcdir)/cross-build/win32sig.h'
++	;;
+     *-cygwin*)
+ 	cross_cache=${srcdir}/cross-build/cygwin32.cache
+ 	;;
+@@ -531,6 +536,7 @@
+ 		# to be compiled into dynamic libraries.
+ 		case "$host_os" in
+ 		cygwin*)	TILDE_LIB= ;;
++		msys*)	TILDE_LIB= ;;
+ 		esac
+ 	else
+ 		RL_LIBDIR='$(dot)/$(LIBSUBDIR)/readline'
+@@ -1041,6 +1047,7 @@
+ *qnx*)		LOCAL_CFLAGS="-Dqnx -F -3s" LOCAL_LDFLAGS="-3s" LOCAL_LIBS="-lunix -lncurses" ;;
+ powerux*)	LOCAL_LIBS="-lgen" ;;
+ cygwin*)	LOCAL_CFLAGS=-DRECYCLES_PIDS ;;
++msys*)	LOCAL_CFLAGS=-DRECYCLES_PIDS ;;
+ opennt*|interix*) LOCAL_CFLAGS="-DNO_MAIN_ENV_ARG -DBROKEN_DIRENT_D_INO -D_POSIX_SOURCE -D_ALL_SOURCE" ;;
+ esac
+ 
+diff -urN old/bash-4.2/parse.y new/bash-4.2/parse.y
+--- old/bash-4.2/parse.y	2017-07-15 00:09:45 -0400
++++ new/bash-4.2/parse.y	2017-07-15 00:40:38 -0400
+@@ -1378,7 +1378,13 @@
+ static int
+ yy_getc ()
+ {
++#ifdef __MSYS__
++  int c;
++  while ((c = (*(bash_input.getter)) ()) == '\r');
++  return c;
++#else
+   return (*(bash_input.getter)) ();
++#endif
+ }
+ 
+ /* Call this to unget C.  That is, to make C the next character
+diff -urN old/bash-4.2/support/config.guess new/bash-4.2/support/config.guess
+--- old/bash-4.2/support/config.guess	2009-01-04 14:41:33 -0500
++++ new/bash-4.2/support/config.guess	2017-07-15 00:27:38 -0400
+@@ -778,6 +778,9 @@
+ 		echo ${UNAME_MACHINE}-unknown-freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'` ;;
+ 	esac
+ 	exit ;;
++    i*:MSYS*:*)
++	echo ${UNAME_MACHINE}-pc-msys
++	exit 0 ;;
+     i*:CYGWIN*:*)
+ 	echo ${UNAME_MACHINE}-pc-cygwin
+ 	exit ;;
+@@ -818,6 +821,9 @@
+     amd64:CYGWIN*:*:* | x86_64:CYGWIN*:*:*)
+ 	echo x86_64-unknown-cygwin
+ 	exit ;;
++    p*:MSYS*:*)
++       echo powerpcle-unknown-msys
++       exit 0 ;;
+     p*:CYGWIN*:*)
+ 	echo powerpcle-unknown-cygwin
+ 	exit ;;
+diff -urN old/bash-4.2/support/config.sub new/bash-4.2/support/config.sub
+--- old/bash-4.2/support/config.sub	2009-11-19 13:43:37 -0500
++++ new/bash-4.2/support/config.sub	2017-07-15 00:28:33 -0400
+@@ -1256,7 +1256,7 @@
+ 	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
+ 	      | -udi* | -eabi* | -lites* | -ieee* | -go32* | -aux* \
+ 	      | -chorusos* | -chorusrdb* \
+-	      | -cygwin* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
++	      | -cygwin* | -msys* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
+ 	      | -mingw32* | -linux-gnu* | -linux-newlib* | -linux-uclibc* \
+ 	      | -uxpv* | -beos* | -mpeix* | -udk* \
+ 	      | -interix* | -uwin* | -mks* | -rhapsody* | -darwin* | -opened* \
